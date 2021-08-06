@@ -1,20 +1,6 @@
+import { MongoClient } from 'mongodb';
 import MeetupList from '../components/meetups/MeetupList';
 
-const DUMMY_MEETUPS = [{
-    id: 'm1',
-    title: 'A first Meetup',
-    image: 'https://images.unsplash.com/photo-1568992687947-868a62a9f521?ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&ixlib=rb-1.2.1&auto=format&fit=crop&w=1189&q=80',
-    address: '1414 becker Street, Santiago',
-    description: 'This is actually my first meetup!'
-},
-{
-    id: 'm2',
-    title: 'A second Meetup',
-    image: 'https://images.unsplash.com/photo-1461595520627-42e3c83019bc?ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&ixlib=rb-1.2.1&auto=format&fit=crop&w=2089&q=80',
-    address: '1414 becker Lane, Bernabeu',
-    description: 'This is actually my first meetup!'
-}
-]
 function HomePage(props) {
     
     return (
@@ -38,11 +24,25 @@ function HomePage(props) {
 // }
 
 export async function getStaticProps() {
-    // Fetch goes here
+    // Fetch data from api
+    const client = await MongoClient.connect('mongodb+srv://pegasus:pegasusDB@cluster0.szf3b.mongodb.net/meetupsdb?retryWrites=true&w=majority')
+
+        const db = client.db();
+
+        const meetupsCollection = db.collection('meetups');
+
+        const meetups = await meetupsCollection.find().toArray();
+
+        client.close();
 
     return {
         props: {
-            meetups: DUMMY_MEETUPS
+            meetups: meetups.map(meetup => ({
+                id: meetup._id.toString(),
+                title: meetup.title,
+                address: meetup.address,
+                image: meetup.image
+            }))
         },
         revalidate: 1
     }
