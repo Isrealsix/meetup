@@ -1,29 +1,43 @@
-import { Fragment } from "react"
+import { MongoClient, ObjectId } from "mongodb"
 import MeetupDetail from "../../components/meetups/MeetupDetail"
 
 
-function MeetupDetails() {
+function MeetupDetails(props) {
     return (
-            <MeetupDetail image='https://images.unsplash.com/photo-1568992687947-868a62a9f521?ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&ixlib=rb-1.2.1&auto=format&fit=crop&w=1189&q=80' title='A First Meetup' address='1414 becker st.' description='The meetup description'/>
+            <MeetupDetail image={props.meetupData.image} title={props.meetupData.title} address={props.meetupData.address} description={props.meetupData.description}/>
     )
 }
 
 export async function getStaticPaths() {
+    const client = await MongoClient.connect('mongodb+srv://pegasus:pegasusDB@cluster0.szf3b.mongodb.net/meetupsdb?retryWrites=true&w=majority')
+
+    const db = client.db();
+
+    const meetupsCollection = db.collection('meetups');
+
+    const meetups = await meetupsCollection.find({}, {_id: 1}).toArray();
+    client.close();
     return {
         fallback: false,
-        paths: [
-            {
-                params: {
-                    meetupId: 'm1'
-                }
-            },
-
-            {
-                params: {
-                    meetupId: 'm2'
-                }
+        paths: meetups.map(meetup => ({
+            params: {
+                meetupId: meetup._id.toString()
             }
-        ]
+        }))
+        
+        // [
+        //     {
+        //         params: {
+        //             meetupId: 'm1'
+        //         }
+        //     },
+
+        //     {
+        //         params: {
+        //             meetupId: 'm2'
+        //         }
+        //     }
+        // ]
     }
 }
 
@@ -31,14 +45,29 @@ export async function getStaticPaths() {
 export async function getStaticProps(context) {
     const meetupId = context.params.meetupId
     // fetch data for a single meetup
+    const client = await MongoClient.connect('mongodb+srv://pegasus:pegasusDB@cluster0.szf3b.mongodb.net/meetupsdb?retryWrites=true&w=majority')
+
+    const db = client.db();
+
+    const meetupsCollection = db.collection('meetups');
+
+    const selectedMeetup = await meetupsCollection.findOne({
+        _id: ObjectId(meetupId)
+    });
+
+    client.close();
+
+
+
+
     return {
         props: {
             meetupData: {
-                image: 'https://images.unsplash.com/photo-1568992687947-868a62a9f521?ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&ixlib=rb-1.2.1&auto=format&fit=crop&w=1189&q=80',
-                id: 'm1',
-                title: 'A First Meetup',
-                address: '1414 becker st.',
-                description: 'The meetup description'
+                id: selectedMeetup._id.toString(),
+                title: selectedMeetup.title,
+                image: selectedMeetup.image,
+                address: selectedMeetup.address,
+                description: selectedMeetup.description
             }
         }
     }
